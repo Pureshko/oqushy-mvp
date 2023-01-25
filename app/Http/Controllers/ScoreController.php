@@ -27,8 +27,8 @@ class ScoreController extends Controller
         $list = $this->User()->getGradesRankedList();
         return response()->json($list);
     }
-    public function getSchoolRankedList(){
-        $list = $this->User()->getSchoolRankedList();
+    public function getShanyraqRankedList(){
+        $list = $this->User()->getShanyraqRankedList();
         return response()->json($list);
     }
     public function User(){

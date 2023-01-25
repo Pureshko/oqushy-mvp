@@ -144,27 +144,50 @@ class User extends Authenticatable
         return $grades;
     }
     public function getShanyraqRankedList(){
-        $penalties = $this->join('studentgrade','studentgrade.user_id','=','users.id')
-                        ->join('shanyraqgrade','shanyraqgrade.grade_id','=','studentgrade.grade_id')
-                        ->join('penalties','shanyraqgrade.shanyraq_id','=','studentgrade.shanyraq_id')
-                        ->join('places','penalties.place_id','=','places.id')
-                        ->groupBy('shanyraqgrade.shanyraq_id')
-                        ->orderBy('score','desc')
-                        ->select('shanyraqgrade.shanyraq_id', DB::raw('SUM(places.score*penalties.factor) as score'));
+        $penalties = $this->penalties()
+                    ->join('places','places.id','=','penalties.place_id')
+                    ->whereNot('penalties.status','=','NEW')
+                    ->groupBy('penalties.shanyraq_id')
+                    ->select('penalties.shanyraq_id',DB::raw('SUM(places.score*penalties.factor) as score'));
         $achievements = $this->achievements()
-                            ->join('places','places.id','=','achievements.place_id')
-                            ->join('studentgrade','studentgrade.grade_id','=','achievements.owner')
-                            ->join('shanyraqgrade','shanyraqgrade.grade_id','=','studentgrade.grade_id')
-                            ->groupBy('shanyraqgrade.shanyraq_id')
-                            ->orderBy('score')
-                            ->select('shanyraqgrade.shanyraq_id',DB::raw('SUM(places.score) as score'));
-        $memberachievements = $this->join('studentgrade','studentgrade.grade_id','=','achievements.owner')
-                                ->join('shanyraqgrade','shanyraqgrade.grade_id','=','studentgrade.grade_id')
-                                ->join('memberachievements','memberachievements.user_id','=','users.id')
-                                ->groupBy('shanyraqgrade.shanyraq_id')
-                                ->orderBy('score','desc')
-                                ->select('shanyraqgrade.shanyraq_id',DB::raw('SUM(memberachievements.score) as score'));
-        $groupachievements = $this->join()
+                    ->join('places','places.id','=','achievements.place_id')
+                    ->whereNot('achievements.status','=','NEW')
+                    ->whereNot('achievements.rating','=',0)
+                    ->groupBy('achievements.owner')
+                    ->select('achievements.owner',DB::raw('SUM(places.score) as score'));
+        $achievements = $this->join('studentgrade','studentgrade.user_id','=','users.id')
+                    ->join('shanyraqgrade','shanyraqgrade.grade_id','=','studentgrade.grade_id')
+                    ->join('shanyraqs','shanyraqs.id','=','shanyraqgrade.shanyraq_id')
+                    ->leftJoinSub($achievements,'achievements','achievements.owner','=','users.id')
+                    ->orderBy('score','desc')
+                    ->select('shanyraqs.id','achievements.score');
+        $memberachievements = $this->memberachievements()
+                    ->join('places','places.id','=','memberachievements.place_id')
+                    ->whereNot('memberachievements.status','=','NEW')
+                    ->groupBy('memberachievements.student_id')
+                    ->select('memberachievements.student_id',DB::raw('SUM(memberachievements.score) as score'));
+        $memberachievements = $this->join('studentgrade','studentgrade.user_id','=','users.id')
+                    ->join('shanyraqgrade','shanyraqgrade.grade_id','=','studentgrade.grade_id')
+                    ->join('shanyraqs','shanyraqs.id','=','shanyraqgrade.shanyraq_id')
+                    ->leftJoinSub($memberachievements,'memberachievements','memberachievements.student_id','=','users.id')
+                    ->orderBy('score','desc')
+                    ->select('shanyraqs.id','memberachievements.score');
+        $groupachievements = $this->groupachievements()
+                    ->join('places','places.id','=','groupachievements.place_id')
+                    ->whereNot('groupachievements.status','=','NEW')
+                    ->groupBy('groupachievements.shanyraq_id')
+                    ->select('groupachievements.shanyraq_id',DB::raw('SUM(places.score) as score'));
+        $achievementlist = $achievements->union($memberachievements)->union($groupachievements);
+        $shanyraqs = $this->Shanyraqs()
+                    ->join('shanyraqgrade','shanyraqgrade.shanyraq_id','=','shanyraqs.id')
+                    ->join('grades','grades.id','=','shanyraqgrade.grade_id')
+                    ->join('studentgrade','studentgrade.grade_id','=','grades.id')
+                    ->leftJoinSub($achievementlist,'achievementlist','achievementlist.id','=','shanyraqs.id')
+                    ->groupBy('shanyraqs.id','shanyraqs.name','achievementlist.score')
+                    ->orderBy('average','desc')
+                    ->select('shanyraqs.id','shanyraqs.name','achievementlist.score as score',DB::raw('COUNT(studentgrade.user_id) as number'),DB::raw('score/COUNT(studentgrade.user_id) as average'))
+                    ->get()->toArray();
+        return $shanyraqs;
     }
     public function getStudentRank($token){
         $list = (array)($this->getStudentsRankedList(0,0,true));
@@ -221,5 +244,16 @@ class User extends Authenticatable
     public function achievements(){
         return new Achievements();
     }
-
+    public function GroupAchievements(){
+        return new GroupAchievements();
+    }
+    public function MemberAchievements(){
+        return new MemberAchievements();
+    }
+    public function Penalties(){
+        return new Penalties();
+    }
+    public function Shanyraqs(){
+        return new Shanyraqs();
+    }
 }
