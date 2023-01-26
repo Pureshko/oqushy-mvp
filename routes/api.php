@@ -36,7 +36,11 @@ Route::middleware('ensure.token')->group(function(){
     Route::prefix('/moderation')->group(function(){
         Route::get('/',[ModerationController::class,'getNonModeratedAchievements']);
         Route::post('/{id}',[ModerationController::class,'acceptOrDeclineAchievement']);
-    }); 
+    });
+    Route::prefix('/search')->group(function(){
+        Route::get('/students',[UserController::class,'searchUsers']);
+        Route::get('/teachers',[UserController::class,'searchTeachers']);
+    });
     Route::post('/user', [UserController::class,"getUser"]);
     Route::get('/user/{id}', [UserController::class,"getUserById"]);
 });
