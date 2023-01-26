@@ -38,5 +38,6 @@ Route::middleware('ensure.token')->group(function(){
         Route::post('/{id}',[ModerationController::class,'acceptOrDeclineAchievement']);
     }); 
     Route::post('/user', [UserController::class,"getUser"]);
+    Route::get('/user/{id}', [UserController::class,"getUserById"]);
 });
 Route::post('/auth', [LoginController::class,"authenticate"]);

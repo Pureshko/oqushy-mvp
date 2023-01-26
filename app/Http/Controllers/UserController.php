@@ -23,6 +23,16 @@ class UserController extends Controller
         ];
         return response()->json($result);
     }
+    public function getUserById(Request $request,$id){
+        $token = $request->header('Authorization');
+        $user = $this->User();
+        $resp = $user->getUserById($token,$id);
+        $result = [
+            'status'=>(bool)$resp,
+            'body'=>$resp
+        ];
+        return response()->json($result);
+    }
     public function User(){
         return new User();
     }

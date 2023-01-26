@@ -177,7 +177,7 @@ class User extends Authenticatable
                     ->whereNot('groupachievements.status','=','NEW')
                     ->groupBy('groupachievements.shanyraq_id')
                     ->select('groupachievements.shanyraq_id',DB::raw('SUM(places.score) as score'));
-        $achievementlist = $achievements->union($memberachievements)->union($groupachievements);
+        $achievementlist = $achievements->union($memberachievements)->union($groupachievements)->union($penalties);
         $shanyraqs = $this->Shanyraqs()
                     ->join('shanyraqgrade','shanyraqgrade.shanyraq_id','=','shanyraqs.id')
                     ->join('grades','grades.id','=','shanyraqgrade.grade_id')
@@ -189,7 +189,7 @@ class User extends Authenticatable
                     ->get()->toArray();
         return $shanyraqs;
     }
-    public function getStudentRank($token){
+    public function getStudentRank($token=null,$id=null){
         $list = (array)($this->getStudentsRankedList(0,0,true));
         $id = $this->where('apiKey','=',$token)->select('id')->get()->toArray();
         $found_key = array_search($id[0]['id'], array_column($list, 'id'));
@@ -200,12 +200,20 @@ class User extends Authenticatable
         ];
         return $result;
     }
-    public function getUserRoles($token){
-        $roles = $this->join('user_roles','user_roles.user_id','=','users.id')
+    public function getUserRoles($token=null,$id=null){
+        if(!$token){
+            $roles = $this->join('user_roles','user_roles.user_id','=','users.id')
                     ->join('roles','roles.id','=','user_roles.role_id')
                     ->where('apiKey','=',$token)
                     ->select('roles.name')->get()->toArray();
-        return array_column($roles,'name');
+            return array_column($roles,'name');
+        }else if(!$id){
+            $roles = $this->join('user_roles','user_roles.user_id','=','users.id')
+                    ->join('roles','roles.id','=','user_roles.role_id')
+                    ->where('users.id','=',$id)
+                    ->select('roles.name')->get()->toArray();
+            return array_column($roles,'name');
+        }
     }
     /**
      * Receive user information
@@ -225,6 +233,16 @@ class User extends Authenticatable
                     ->get()->toArray();
         $user[0]['roles'] = $this->getUserRoles($token);
         $user = array_merge($user[0],$this->getStudentRank($token));
+        return $user;
+    }
+    public function getUserById($id){
+        $user = $this->join('studentgrade','studentgrade.user_id','=','users.id')
+                    ->join('grades','grades.id','=','studentgrade.grade_id')
+                    ->where('users.id',$id)
+                    ->select('users.id','users.email','users.name','grades.grade','grades.letter')
+                    ->get()->toArray();
+        $user[0]['roles'] = $this->getUserRoles(0,$id);
+        $user = array_merge($user[0],$this->getStudentRank($id));
         return $user;
     }
     public function getUserId($token){
