@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use App\Models\AchievementSupervisors;
 
 class Achievements extends Model
 {
@@ -12,34 +13,43 @@ class Achievements extends Model
     public function createAchievement($array){
         return $this->insertGetId($array);
     }
+    public function bindAchievementSupervisor($achievementId, $supervisorId){
+        return AchievementSupervisors()->insertSuperivsor($achievementId, $supervisorId);
+    }
     public function getUserAchievement($id){
         $user = $this->join('places','places.id','=','achievements.place_id')
                     ->join('categories','categories.id','=','places.category_id')
+                    ->join('subcategories','subcategories.id','=','places.subcategory_id')
+                    ->join('achievementsfiles','achievementsfiles.achievement_id','=','achievements.id')
+                    ->join('achievement_supervisors','achievement_supervisors.achievement_id','=','achievements.id')
+                    ->join('users','users.id','=','achievement_supervisors.supervisor_id')
                     ->where('achievements.id','=',$id)
+                    ->groupBy('achievements.id',
+                        'achievements.name',
+                        'achievements.description',
+                        'category_name',
+                        'subcategory_name',
+                        'places.place',
+                        'places.score',
+                        'achievements.status',
+                    )
                     ->select(
                         'achievements.id',
                         'achievements.name',
                         'achievements.description',
                         'categories.name as category_name',
+                        'subcategories.name as subcategory_name',
                         'places.place',
                         'places.score',
-                        'achievements.status'
+                        'achievements.status',
+                        'JSON_ARRAYAGG(achievementsfiles.url) as files',
+                        'JSON_OBJECTAGG(users.id,users.name) as supervisors'
                     )
                     ->get()->toArray();
         if(!$user){
             return false;
         }
-        $files = $this->join('achievementsfiles','achievementsfiles.achievement_id','=','achievements.id')
-                    ->where('achievements.id','=',$id)
-                    ->select('achievementsfiles.achievement_id','achievementsfiles.url')
-                    ->get()->toArray();
-        foreach($user as $key=>$us){
-            foreach($files as $file){
-                if($us['id'] == $file['achievement_id']){
-                    $user[$key]['files'][] = $file['url'];
-                }
-            }
-        }
+        
         return $user;
     }
     public function getUserAchievementList($token){
@@ -90,5 +100,8 @@ class Achievements extends Model
     }
     public function AchievementsFiles(){
         return new Achievementsfiles();
+    }
+    public function AchievementSupervisors(){
+        return new AchievementSupervisors();
     }
 }

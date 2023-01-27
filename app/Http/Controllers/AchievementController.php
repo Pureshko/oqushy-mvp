@@ -49,7 +49,10 @@ class AchievementController extends Controller
         $credentials = Validator::make($inputs, [
             'name'=>'required|max:255',
             'description'=>'required|max:10000',
-            'place_id'=>'required|max:255',
+            'place_id'=>'required|integer ',
+            'date'=>'required|date',
+            'rating'=>'nullable|boolean',
+            'supervisor_id'=>'nullable|integer',
             'photo1'=>'nullable|image',
             'photo2'=>'nullable|image',
             'photo3'=>'nullable|image',
@@ -65,12 +68,16 @@ class AchievementController extends Controller
             'description'=>$inputs['description'],
             'place_id'=>$inputs['place_id'],
             'owner'=>$this->Achievements()->User()->getUserId($token),
-            'date'=>NULL,
-            'status'=>'NEW'
+            'date'=>$inputs['date'],
+            'status'=>'NEW',
+            'rating'=> !$inputs['rating'] ?? 0
         ];
 
         $achievementId = $this->Achievements()->createAchievement($data);
         if(isset($achievementId)){
+            if(isset($inputs['supervisor'])){
+                $this->Achievements()->bindAchievementSupervisor($achievementId,$inputs['supervisor']);
+            }
             $photo1 = $request->hasFile('photo1') ? $request->file('photo1') : NULL;
             $photo2 = $request->hasFile('photo2') ? $request->file('photo2') : NULL;
             $photo3 = $request->hasFile('photo3') ? $request->file('photo3') : NULL;
