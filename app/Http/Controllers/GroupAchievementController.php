@@ -2,62 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Groupachievements;
 
-class GroupAchievementController extends Controller
+class GroupAchievementController extends ApiController
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy($id)
-    {
-        //
+    protected $insertValidateArray = [
+        'name'=>'required|max:255',
+        'description'=>'required|max:10000',
+        'place_id'=>'required|integer',
+        'date'=>'required|date',
+        'factor'=>'required|integer',
+        'photo1'=>'nullable|image',
+        'photo2'=>'nullable|image',
+        'photo3'=>'nullable|image',
+    ];
+    protected $updateValidateArray=[
+        'name'=>'required|max:255',
+        'description'=>'required|max:10000',
+        'place_id'=>'required|integer',
+        'date'=>'required|date',
+        'factor'=>'required|integer',
+        'photo1'=>'nullable|image',
+        'photo2'=>'nullable|image',
+        'photo3'=>'nullable|image',
+    ];
+    protected $dataArray=[
+        'name',
+        'description',
+        'place_id',
+        'date',
+        'factor',
+        'shanyraq_id',
+        'status'=>"NEW",
+    ];
+    protected $modelName = 'Groupachievements';
+    protected $modelIdName = 'groupachievement_id';
+    protected $path = 'achievements/group/achievement_';
+    protected $defaultPath = 'achievements/default.jpg';
+    public function BaseApiModel(){
+        return new Groupachievements();
     }
 }

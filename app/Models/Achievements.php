@@ -3,26 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\AchievementSupervisors;
+use App\Models\BaseApiModel;
 
-class Achievements extends Model
+class Achievements extends BaseApiModel
 {
     use HasFactory;
-    public function createAchievement($array){
-        return $this->insertGetId($array);
-    }
     public function bindAchievementSupervisor($achievementId, $supervisorId){
         return AchievementSupervisors()->insertSuperivsor($achievementId, $supervisorId);
     }
-    public function getUserAchievement($id){
-        $user = $this->join('places','places.id','=','achievements.place_id')
-                    ->join('categories','categories.id','=','places.category_id')
-                    ->join('subcategories','subcategories.id','=','places.subcategory_id')
-                    ->join('achievementsfiles','achievementsfiles.achievement_id','=','achievements.id')
-                    ->join('achievement_supervisors','achievement_supervisors.achievement_id','=','achievements.id')
+    public function getById($id){
+        $files = $this->BaseApiFilesModel()->where('achievement_id','=',$id)->select('url')->get()->toArray();
+        $supervisors = $this->AchievementSupervisors()
                     ->join('users','users.id','=','achievement_supervisors.supervisor_id')
+                    ->select('users.id','users.name')->get()->toArray();
+        $user = $this->join('places','places.id','=','achievements.place_id')
+                    ->join('subcategories','subcategories.id','=','places.subcategory_id')
+                    ->join('categories','categories.id','=','subcategories.category_id')
                     ->where('achievements.id','=',$id)
                     ->groupBy('achievements.id',
                         'achievements.name',
@@ -42,20 +40,27 @@ class Achievements extends Model
                         'places.place',
                         'places.score',
                         'achievements.status',
-                        'JSON_ARRAYAGG(achievementsfiles.url) as files',
-                        'JSON_OBJECTAGG(users.id,users.name) as supervisors'
                     )
                     ->get()->toArray();
         if(!$user){
             return false;
         }
-        
+        $user[0]['files'] = \array_column($files,'url');
+        $user[0]['supervisors'] = $supervisors;
         return $user;
     }
-    public function getUserAchievementList($token){
-        $id = $this->User()->getUserId($token);
+    public function getListByUserId($id){
         $achievements = $this->join('places','places.id','=','achievements.place_id')
-                            ->where('achievements.owner','=',$id)
+                            ->join('users','users.id','=','achievements.owner')
+                            ->where('users.id','=',$id)
+                            ->select('achievements.id','achievements.name','achievements.description','achievements.status','places.score')
+                            ->get()->toArray();
+        return $achievements;
+    }
+    public function getList($token){
+        $achievements = $this->join('places','places.id','=','achievements.place_id')
+                            ->join('users','users.id','=','achievements.owner')
+                            ->where('users.apiKey','=',$token)
                             ->select('achievements.id','achievements.name','achievements.description','achievements.status','places.score')
                             ->get()->toArray();
         return $achievements;
@@ -75,30 +80,13 @@ class Achievements extends Model
                         $this->where('id','=',$id)->update(['status'=>'DEC']);
     }
     public function destroyAchievement($id){
-        $this->AchievementsFiles()->destroyAchievementFiles($id);
+        $this->BaseApiFilesModel()->destroyAchievementFiles($id);
         return $this->where('id','=',$id)->delete();
-    }
-    public function createAchievementFiles($achievementId,$data){
-        if($data['photo1']){
-            $this->AchievementsFiles()->createAchievementFile($data['photo1'],$achievementId);
-            if($data['photo2']){
-                $this->AchievementsFiles()->createAchievementFile($data['photo2'],$achievementId);
-                if($data['photo3']){
-                    $this->AchievementsFiles()->createAchievementFile($data['photo3'],$achievementId);
-                }else{
-                    return true;
-                }
-            }else{
-                return true;
-            }
-        }else{
-            return false;
-        }
     }
     public function User(){
         return new User();
     }
-    public function AchievementsFiles(){
+    public function BaseApiFilesModel(){
         return new Achievementsfiles();
     }
     public function AchievementSupervisors(){

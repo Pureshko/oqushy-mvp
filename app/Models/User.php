@@ -256,6 +256,14 @@ class User extends Authenticatable
                     ->where('users.apiKey','=',$token)
                     ->select('grades.id')->get()->toArray())[0]['id'];
     }
+    public function getStudentShanyraq($token){
+        return $this->join('studentgrade','studentgrade.user_id','=','users.id')
+                    ->join('grades','studentgrade.grade_id','=','grades.id')
+                    ->join('shanyraqgrade','shanyraqgrade.grade_id','=','grades.id')
+                    ->join('shanyraqs','shanyraqs.id','=','shanyraqgrade.shanyraq_id')
+                    ->where('users.apiKey','=',$token)
+                    ->select('shanyraqs.id')->get()->toArray();
+    }
     public function setToken($id,$data){
         return $this->where('id','=',$id)->update($data);
     }

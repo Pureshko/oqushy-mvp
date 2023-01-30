@@ -3,19 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\BaseApiModel;
 use App\Models\LostFiles;
-use Illuminate\Support\Facades\DB;
 
-class Losts extends Model
+class Losts extends BaseApiModel
 {
     use HasFactory;
-    public function getLostList(){
+    public function getFullList(){
         $losts = $this->join('users','users.id','=','losts.user_id')
                     ->select('losts.id','losts.name','users.name','losts.contact')
                     ->get()->toArray();
-        $files = $this->join('lostfiles','lostfiles.lost_id','=','losts.id')
-                    ->groupBy('lostfiles.lost_id','lostfiles.url')
+        $files = $this->BaseApiFilesModel()
                     ->select('lostfiles.lost_id','lostfiles.url')
                     ->get()->toArray();
         foreach($losts as $key=>$lost){
@@ -27,7 +25,48 @@ class Losts extends Model
         }
         return $losts;
     }
-    public function getLost($id){
+    public function getList($token){
+        $userId = $this->User()->getUserIdByToken($token);
+        $losts = $this->join('users','users.id','=','losts.user_id')
+                    ->where('users.id','=',$userId)
+                    ->select('losts.id','losts.name','users.name','losts.contact')
+                    ->get()->toArray();
+        $files = $this->BaseApiFilesModel()
+                    ->join('losts','losts.id','=','lostfiles.lost_id')
+                    ->join('users','users.id','=','losts.user_id') 
+                    ->where('users.id','=',$userId)
+                    ->select('lostfiles.lost_id','lostfiles.url')
+                    ->get()->toArray();
+        foreach($losts as $key=>$lost){
+            foreach($files as $file){
+                if($lost['id'] == $file['lost_id']){
+                    $losts[$key]['files'][] = $file['url'];
+                }
+            }
+        }
+        return $losts;
+    }
+    public function getListByUserId($id){
+        $losts = $this->join('users','users.id','=','losts.user_id')
+                    ->where('users.id','=',$id)
+                    ->select('losts.id','losts.name','users.name','losts.contact')
+                    ->get()->toArray();
+        $files = $this->BaseApiFilesModel()
+                    ->join('losts','losts.id','=','lostfiles.lost_id')
+                    ->join('users','users.id','=','losts.user_id')
+                    ->where('users.id','=',$id)
+                    ->select('lostfiles.lost_id','lostfiles.url')
+                    ->get()->toArray();
+        foreach($losts as $key=>$lost){
+            foreach($files as $file){
+                if($lost['id'] == $file['lost_id']){
+                    $losts[$key]['files'][] = $file['url'];
+                }
+            }
+        }
+        return $losts;
+    }
+    public function getById($id){
         $lost = $this->join('users','users.id','=','losts.user_id')
                     ->where('losts.id','=',$id)
                     ->select('losts.*','users.name')
@@ -45,36 +84,14 @@ class Losts extends Model
         }
         return $lost;
     }
-    public function destroyLost($id){
-        $this->join('lostfiles','lostfiles.lost_id','=','losts.id')
-            ->where('lostfiles.lost_id','=',$id)
-            ->delete();
-        return $this->where('id','=',$id)->delete();
-    }
     public function updateLost($id,$data){
         return $this->where('id','=',$id)->update($data);
     }
-    public function createLost($data){
-        return $this->insertGetId($data);
+
+    public function User(){
+        return new User();
     }
-    public function createLostFiles($lostId,$data){
-        if($data['photo1']){
-            $this->LostFiles()->createLostFile($data['photo1'],$lostId);
-            if($data['photo2']){
-                $this->LostFiles()->createLostFile($data['photo2'],$lostId);
-                if($data['photo3']){
-                    $this->LostFiles()->createLostFile($data['photo3'],$lostId);
-                }else{
-                    return true;
-                }
-            }else{
-                return true;
-            }
-        }else{
-            return false;
-        }
-    }
-    public function LostFiles(){
+    public function BaseApiFilesModel(){
         return new LostFiles();
     }
 }
