@@ -9,7 +9,7 @@ use App\Models\LostFiles;
 class Losts extends BaseApiModel
 {
     use HasFactory;
-    public function getFullList(){
+    public function getList(){
         $losts = $this->join('users','users.id','=','losts.user_id')
                     ->select('losts.id','losts.name','users.name','losts.contact')
                     ->get()->toArray();
@@ -25,7 +25,7 @@ class Losts extends BaseApiModel
         }
         return $losts;
     }
-    public function getList($token){
+    public function getUserList($token){
         $userId = $this->User()->getUserIdByToken($token);
         $losts = $this->join('users','users.id','=','losts.user_id')
                     ->where('users.id','=',$userId)

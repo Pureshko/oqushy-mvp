@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\BaseAchievementModel;
+use App\Models\BaseApiModel;
 
 
 class Groupachievements extends BaseApiModel
 {
     use HasFactory;
-    public function getList($token){
+    public function getUserList($token){
         return $this->join('places','places.id','=','groupachievements.place_id')
                     ->join('shanyraqs','shanyraqs.id','=','groupachievements.shanyraq_id')
                     ->join('studentgrade','studentgrade.grade_id','=','shanyraq.grade_id')

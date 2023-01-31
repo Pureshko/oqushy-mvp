@@ -57,7 +57,7 @@ class Achievements extends BaseApiModel
                             ->get()->toArray();
         return $achievements;
     }
-    public function getList($token){
+    public function getUserList($token){
         $achievements = $this->join('places','places.id','=','achievements.place_id')
                             ->join('users','users.id','=','achievements.owner')
                             ->where('users.apiKey','=',$token)

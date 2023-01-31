@@ -28,7 +28,7 @@ abstract class ApiController extends Controller implements IApiController
     public function index(Request $request){
         $model = $this->BaseApiModel();
         $token = $request->header('Authorization');
-        $response = $model->getFullList($token);
+        $response = $model->getUserList($token);
         if(empty($response)){
             $result = [
                 'status'=>false,

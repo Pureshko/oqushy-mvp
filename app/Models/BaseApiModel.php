@@ -9,7 +9,7 @@ use App\Models\BaseApiFilesModel;
 abstract class BaseApiModel extends Model
 {
     use HasFactory;
-    abstract protected function getList($token);
+    abstract protected function getUserList($token);
     abstract protected function getListByUserId($id);
     abstract protected function getById($id);
     public function create($data){
